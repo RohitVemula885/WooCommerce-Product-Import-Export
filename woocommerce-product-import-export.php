@@ -38,6 +38,9 @@ class WooCommerceProductImportExport {
     }
     
     private function init_hooks() {
+        // Declare HPOS compatibility
+        add_action('before_woocommerce_init', array($this, 'declare_hpos_compatibility'));
+        
         // Initialize Admin
         new WC_PIE_Admin($this->plugin_url);
         
@@ -47,6 +50,12 @@ class WooCommerceProductImportExport {
         // Activation and deactivation hooks
         register_activation_hook(__FILE__, array($this, "activate"));
         register_deactivation_hook(__FILE__, array($this, "deactivate"));
+    }
+    
+    public function declare_hpos_compatibility() {
+        if (class_exists(\Automattic\WooCommerce\Utilities\FeaturesUtil::class)) {
+            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+        }
     }
     
     public function activate() {

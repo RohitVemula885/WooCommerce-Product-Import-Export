@@ -438,12 +438,26 @@ class WC_PIE_Importer {
         }
 
         // Determine source - local file from ZIP or URL
-        if (!empty($options['use_local_images']) && !empty($image_data['filename'])) {
-            $local_file = $options['local_images_dir'] . '/' . $image_data['filename'];
-            if (file_exists($local_file)) {
-                $attachment_id = $this->import_local_image($local_file, $image_data);
+        if (!empty($options['use_local_images'])) {
+            // Check for local_path first (hash-based filename from ZIP), then fallback to filename
+            $local_filename = null;
+            if (!empty($image_data['local_path'])) {
+                // local_path already includes 'images/' prefix
+                $local_filename = basename($image_data['local_path']);
+            } elseif (!empty($image_data['filename'])) {
+                $local_filename = $image_data['filename'];
+            }
+            
+            if ($local_filename) {
+                $local_file = $options['local_images_dir'] . '/' . $local_filename;
+                if (file_exists($local_file)) {
+                    $attachment_id = $this->import_local_image($local_file, $image_data);
+                } else {
+                    WC_PIE_Logger::log('IMPORT IMAGE - Local file not found', array('file' => $local_file, 'tried_local_path' => !empty($image_data['local_path']), 'tried_filename' => !empty($image_data['filename'])));
+                    $attachment_id = null;
+                }
             } else {
-                WC_PIE_Logger::log('IMPORT IMAGE - Local file not found', array('file' => $local_file));
+                WC_PIE_Logger::log('IMPORT IMAGE FROM DATA - Error', array('error' => 'No local_path or filename provided for local image'));
                 $attachment_id = null;
             }
         } else if (!empty($image_data['url'])) {
